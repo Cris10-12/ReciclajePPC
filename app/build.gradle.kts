@@ -60,4 +60,8 @@ dependencies {
 
     // Conjunto completo de íconos Material (reciclaje, mapa, chat, etc.)
     implementation("androidx.compose.material:material-icons-extended")
+
+    // Carga de imágenes (foto de perfil y galería)
+    implementation("io.coil-kt:coil-compose:2.7.0")
+
 }

@@ -9,7 +9,9 @@ import com.udistrital.reciclajeppc.AppContainer
 import com.udistrital.reciclajeppc.core.session.SessionManager
 import com.udistrital.reciclajeppc.domain.model.RecycleRequest
 import com.udistrital.reciclajeppc.domain.model.RequestStatus
+import com.udistrital.reciclajeppc.domain.model.User
 import com.udistrital.reciclajeppc.domain.repository.RequestRepository
+import com.udistrital.reciclajeppc.domain.repository.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -18,14 +20,15 @@ import kotlinx.coroutines.flow.stateIn
 
 data class MyRequestsUiState(
     val isLoading: Boolean = true,
-    /** null = todas las activas */
     val filter: RequestStatus? = null,
-    val requests: List<RecycleRequest> = emptyList()
+    val requests: List<RecycleRequest> = emptyList(),
+    val users: Map<String, User> = emptyMap()
 )
 
 class MyRequestsViewModel(
     requestRepository: RequestRepository,
-    sessionManager: SessionManager
+    sessionManager: SessionManager,
+    userRepository: UserRepository
 ) : ViewModel() {
 
     private val filter = MutableStateFlow<RequestStatus?>(null)
@@ -33,8 +36,9 @@ class MyRequestsViewModel(
     val uiState: StateFlow<MyRequestsUiState> = combine(
         requestRepository.observeRequests(),
         sessionManager.currentUser,
-        filter
-    ) { requests, user, selected ->
+        filter,
+        userRepository.observeUsers()
+    ) { requests, user, selected, users ->
         MyRequestsUiState(
             isLoading = false,
             filter = selected,
@@ -43,7 +47,8 @@ class MyRequestsViewModel(
                         it.generatorId == user.id &&
                         (it.status == RequestStatus.AVAILABLE || it.status == RequestStatus.ACCEPTED) &&
                         (selected == null || it.status == selected)
-            }
+            },
+            users = users.associateBy { it.id }
         )
     }.stateIn(
         scope = viewModelScope,
@@ -58,7 +63,11 @@ class MyRequestsViewModel(
     companion object {
         fun factory(container: AppContainer): ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                MyRequestsViewModel(container.requestRepository, container.sessionManager)
+                MyRequestsViewModel(
+                    container.requestRepository,
+                    container.sessionManager,
+                    container.userRepository
+                )
             }
         }
     }

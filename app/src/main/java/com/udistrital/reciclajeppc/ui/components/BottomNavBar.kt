@@ -2,11 +2,13 @@ package com.udistrital.reciclajeppc.ui.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.ChatBubble
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -15,10 +17,9 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.udistrital.reciclajeppc.core.constants.AppTexts
 import com.udistrital.reciclajeppc.core.navigation.Routes
 import com.udistrital.reciclajeppc.domain.model.UserRole
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 
 
 data class BottomNavItem(
@@ -30,7 +31,7 @@ data class BottomNavItem(
 private val generatorItems = listOf(
     BottomNavItem(Routes.GENERATOR_HOME, "Inicio", Icons.Filled.Home),
     BottomNavItem(Routes.MY_REQUESTS, "Solicitudes", Icons.Filled.Inventory2),
-    BottomNavItem(Routes.MESSAGES, "Mensajes", Icons.Filled.ChatBubble),
+    BottomNavItem(Routes.PEOPLE, AppTexts.PEOPLE_TITLE, Icons.Filled.Group),
     BottomNavItem(Routes.PROFILE, "Perfil", Icons.Filled.Person)
 )
 
@@ -38,7 +39,7 @@ private val recyclerItems = listOf(
     BottomNavItem(Routes.RECYCLER_HOME, "Inicio", Icons.Filled.Home),
     BottomNavItem(Routes.EXPLORE, "Explorar", Icons.Filled.Search),
     BottomNavItem(Routes.AGENDA, "Agenda", Icons.Filled.CalendarMonth),
-    BottomNavItem(Routes.MESSAGES, "Mensajes", Icons.Filled.ChatBubble),
+    BottomNavItem(Routes.PEOPLE, AppTexts.PEOPLE_TITLE, Icons.Filled.Group),
     BottomNavItem(Routes.PROFILE, "Perfil", Icons.Filled.Person)
 )
 

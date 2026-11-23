@@ -20,6 +20,7 @@ import com.udistrital.reciclajeppc.domain.model.RequestStatus
 import com.udistrital.reciclajeppc.ui.components.AppTopBar
 import com.udistrital.reciclajeppc.ui.components.EmptyState
 import com.udistrital.reciclajeppc.ui.components.MaterialChip
+import com.udistrital.reciclajeppc.ui.components.MessagesAction
 import com.udistrital.reciclajeppc.ui.components.PrimaryButton
 import com.udistrital.reciclajeppc.ui.components.RequestCard
 
@@ -29,7 +30,10 @@ fun MyRequestsScreen(
     onFilterChange: (RequestStatus?) -> Unit,
     onCreateRequest: () -> Unit,
     onRequestClick: (String) -> Unit,
-    onHistory: () -> Unit
+    onHistory: () -> Unit,
+    unreadMessages: Int,
+    onMessages: () -> Unit,
+    onUserClick: (String) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         AppTopBar(
@@ -38,6 +42,7 @@ fun MyRequestsScreen(
                 IconButton(onClick = onHistory) {
                     Icon(Icons.Filled.History, contentDescription = AppTexts.SEE_HISTORY)
                 }
+                MessagesAction(unreadCount = unreadMessages, onClick = onMessages)
             }
         )
 
@@ -83,7 +88,12 @@ fun MyRequestsScreen(
                 verticalArrangement = Arrangement.spacedBy(Dimens.spaceMd)
             ) {
                 items(state.requests, key = { it.id }) { request ->
-                    RequestCard(request = request, onClick = { onRequestClick(request.id) })
+                    RequestCard(
+                        request = request,
+                        onClick = { onRequestClick(request.id) },
+                        person = request.recyclerId?.let { state.users[it] },
+                        onPersonClick = onUserClick
+                    )
                 }
             }
         }

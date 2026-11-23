@@ -9,17 +9,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Recycling
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -36,7 +34,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.udistrital.reciclajeppc.core.constants.AppTexts
@@ -44,14 +41,16 @@ import com.udistrital.reciclajeppc.core.constants.Dimens
 import com.udistrital.reciclajeppc.core.util.cardPadding
 import com.udistrital.reciclajeppc.core.util.formatWeight
 import com.udistrital.reciclajeppc.core.util.screenPadding
+import com.udistrital.reciclajeppc.domain.model.RequestStatus
 import com.udistrital.reciclajeppc.ui.components.AppTopBar
 import com.udistrital.reciclajeppc.ui.components.EmptyState
+import com.udistrital.reciclajeppc.ui.components.InfoRow
+import com.udistrital.reciclajeppc.ui.components.PersonLinkCard
 import com.udistrital.reciclajeppc.ui.components.PrimaryButton
 import com.udistrital.reciclajeppc.ui.components.SecondaryButton
 import com.udistrital.reciclajeppc.ui.components.StatusBadge
 import com.udistrital.reciclajeppc.ui.components.icon
 import com.udistrital.reciclajeppc.ui.components.labels
-import com.udistrital.reciclajeppc.ui.components.InfoRow
 
 
 @Composable
@@ -60,6 +59,9 @@ fun RequestDetailScreen(
     onAccept: () -> Unit,
     onComplete: () -> Unit,
     onCancel: () -> Unit,
+    onUserClick: (String) -> Unit,
+    onToggleFavorite: (String) -> Unit,
+    onOpenChat: () -> Unit,
     onBack: () -> Unit
 ) {
     var showCancelDialog by remember { mutableStateOf(false) }
@@ -117,6 +119,30 @@ fun RequestDetailScreen(
                     }
                     StatusBadge(request.status)
                 }
+                state.generator?.let { generator ->
+                    val isOther = generator.id != state.currentUserId
+                    PersonLinkCard(
+                        roleLabel = AppTexts.ROLE_GENERATOR,
+                        user = generator,
+                        onClick = { onUserClick(generator.id) },
+                        isFavorite = generator.id in state.favoriteIds,
+                        onToggleFavorite = if (isOther) {
+                            { onToggleFavorite(generator.id) }
+                        } else null
+                    )
+                }
+                state.recycler?.let { recycler ->
+                    val isOther = recycler.id != state.currentUserId
+                    PersonLinkCard(
+                        roleLabel = AppTexts.ROLE_RECYCLER,
+                        user = recycler,
+                        onClick = { onUserClick(recycler.id) },
+                        isFavorite = recycler.id in state.favoriteIds,
+                        onToggleFavorite = if (isOther) {
+                            { onToggleFavorite(recycler.id) }
+                        } else null
+                    )
+                }
 
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -130,7 +156,6 @@ fun RequestDetailScreen(
                         modifier = Modifier.cardPadding(),
                         verticalArrangement = Arrangement.spacedBy(Dimens.spaceMd)
                     ) {
-                        InfoRow(Icons.Filled.Person, "Generador", request.generatorName)
                         InfoRow(Icons.Filled.LocationOn, "Dirección", request.address)
                         InfoRow(Icons.Filled.LocationOn, "Barrio", request.neighborhood)
                         InfoRow(Icons.Filled.Schedule, "Disponibilidad", request.availability)
@@ -139,10 +164,31 @@ fun RequestDetailScreen(
                             "Notas",
                             request.notes.ifBlank { AppTexts.DETAIL_NO_NOTES }
                         )
-                        request.recyclerName?.let {
-                            InfoRow(Icons.Filled.Recycling, "Reciclador", it)
-                        }
                     }
+                }
+
+                if (state.canChat) {
+                    SecondaryButton(
+                        text = AppTexts.OPEN_CHAT,
+                        onClick = onOpenChat,
+                        icon = Icons.Filled.Chat,
+                        enabled = !state.isWorking
+                    )
+                    state.chatError?.let { message ->
+                        Text(
+                            text = message,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                } else if (state.currentUserId == request.generatorId &&
+                    request.status == RequestStatus.AVAILABLE
+                ) {
+                    Text(
+                        text = AppTexts.CHAT_HINT_WAIT,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
 
                 if (state.canAccept) {

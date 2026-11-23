@@ -106,7 +106,6 @@ class CreateRequestViewModel(
                 RecycleRequest(
                     id = "r-" + UUID.randomUUID().toString().take(8),
                     generatorId = user.id,
-                    generatorName = user.name,
                     material = material,
                     weightKg = weight,
                     address = s.address.trim(),

@@ -16,12 +16,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.udistrital.reciclajeppc.core.constants.AppTexts
 import com.udistrital.reciclajeppc.core.constants.Dimens
+import com.udistrital.reciclajeppc.core.util.pluralize
 import com.udistrital.reciclajeppc.core.util.screenPadding
 import com.udistrital.reciclajeppc.ui.components.AppTopBar
 import com.udistrital.reciclajeppc.ui.components.EmptyState
+import com.udistrital.reciclajeppc.ui.components.MessagesAction
 import com.udistrital.reciclajeppc.ui.components.PrimaryButton
 import com.udistrital.reciclajeppc.ui.components.RequestCard
-import com.udistrital.reciclajeppc.core.util.pluralize
 
 
 @Composable
@@ -29,7 +30,10 @@ fun AgendaScreen(
     state: AgendaUiState,
     onExplore: () -> Unit,
     onRequestClick: (String) -> Unit,
-    onHistory: () -> Unit
+    onHistory: () -> Unit,
+    unreadMessages: Int,
+    onMessages: () -> Unit,
+    onUserClick: (String) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         AppTopBar(
@@ -38,6 +42,7 @@ fun AgendaScreen(
                 IconButton(onClick = onHistory) {
                     Icon(Icons.Filled.History, contentDescription = AppTexts.SEE_HISTORY)
                 }
+                MessagesAction(unreadCount = unreadMessages, onClick = onMessages)
             }
         )
 
@@ -75,7 +80,12 @@ fun AgendaScreen(
                 verticalArrangement = Arrangement.spacedBy(Dimens.spaceMd)
             ) {
                 items(state.requests, key = { it.id }) { request ->
-                    RequestCard(request = request, onClick = { onRequestClick(request.id) })
+                    RequestCard(
+                        request = request,
+                        onClick = { onRequestClick(request.id) },
+                        person = state.users[request.generatorId],
+                        onPersonClick = onUserClick
+                    )
                 }
             }
         }

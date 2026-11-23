@@ -22,19 +22,36 @@ class FakeRequestRepository : RequestRepository {
         requests.update { listOf(request) + it }
     }
 
-    override suspend fun acceptRequest(id: String, recyclerName: String) {
-        updateRequest(id) { it.copy(status = RequestStatus.ACCEPTED, recyclerName = recyclerName) }
+    // Solo se acepta si sigue disponible (evita que dos recicladores tomen la misma).
+    override suspend fun acceptRequest(id: String, recyclerId: String) {
+        requests.update { list ->
+            list.map {
+                if (it.id == id && it.status == RequestStatus.AVAILABLE) {
+                    it.copy(status = RequestStatus.ACCEPTED, recyclerId = recyclerId)
+                } else it
+            }
+        }
     }
 
     override suspend fun completeRequest(id: String) {
-        updateRequest(id) { it.copy(status = RequestStatus.COMPLETED) }
+        requests.update { list ->
+            list.map {
+                if (it.id == id && it.status == RequestStatus.ACCEPTED) {
+                    it.copy(status = RequestStatus.COMPLETED)
+                } else it
+            }
+        }
     }
 
     override suspend fun cancelRequest(id: String) {
-        updateRequest(id) { it.copy(status = RequestStatus.CANCELLED) }
-    }
-
-    private fun updateRequest(id: String, change: (RecycleRequest) -> RecycleRequest) {
-        requests.update { list -> list.map { if (it.id == id) change(it) else it } }
+        requests.update { list ->
+            list.map {
+                if (it.id == id &&
+                    (it.status == RequestStatus.AVAILABLE || it.status == RequestStatus.ACCEPTED)
+                ) {
+                    it.copy(status = RequestStatus.CANCELLED)
+                } else it
+            }
+        }
     }
 }

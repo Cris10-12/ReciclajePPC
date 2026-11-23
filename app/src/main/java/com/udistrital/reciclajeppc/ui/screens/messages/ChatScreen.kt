@@ -1,13 +1,17 @@
 package com.udistrital.reciclajeppc.ui.screens.messages
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -25,40 +29,58 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.udistrital.reciclajeppc.core.constants.AppTexts
 import com.udistrital.reciclajeppc.core.constants.Dimens
+import com.udistrital.reciclajeppc.core.util.formatClock
 import com.udistrital.reciclajeppc.domain.model.ChatMessage
+import com.udistrital.reciclajeppc.domain.model.RecycleRequest
+import com.udistrital.reciclajeppc.domain.model.User
 import com.udistrital.reciclajeppc.ui.components.AppTopBar
 import com.udistrital.reciclajeppc.ui.components.EmptyState
-
+import com.udistrital.reciclajeppc.ui.components.UserAvatar
+import com.udistrital.reciclajeppc.ui.components.labels
 
 @Composable
 fun ChatScreen(
     state: ChatUiState,
     onDraftChange: (String) -> Unit,
     onSend: () -> Unit,
+    onUserClick: (String) -> Unit,
+    onRequestClick: (String) -> Unit,
     onBack: () -> Unit
 ) {
     val conversation = state.conversation
     val listState = rememberLazyListState()
     val messageCount = conversation?.messages?.size ?: 0
 
-    // Baja al último mensaje al abrir el chat y cada vez que llega uno nuevo.
     LaunchedEffect(messageCount) {
         if (messageCount > 0) listState.animateScrollToItem(messageCount - 1)
     }
 
     Column(modifier = Modifier.fillMaxSize().imePadding()) {
         AppTopBar(
-            title = conversation?.contactName ?: AppTexts.CHAT_TITLE,
+            title = state.contact?.name ?: AppTexts.CHAT_TITLE,
             onBack = onBack
         )
+
+        if (conversation != null) {
+            ChatContextBar(
+                contact = state.contact,
+                request = state.request,
+                onUserClick = onUserClick,
+                onRequestClick = onRequestClick
+            )
+        }
 
         when {
             state.isLoading -> Box(
@@ -83,29 +105,98 @@ fun ChatScreen(
             else -> LazyColumn(
                 state = listState,
                 modifier = Modifier.weight(1f).fillMaxWidth(),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(Dimens.spaceMd),
+                contentPadding = PaddingValues(Dimens.spaceMd),
                 verticalArrangement = Arrangement.spacedBy(Dimens.spaceSm)
             ) {
                 items(conversation.messages, key = { it.id }) { message ->
-                    MessageBubble(message)
+                    MessageBubble(
+                        message = message,
+                        mine = message.senderId == state.currentUserId
+                    )
                 }
             }
         }
 
         if (conversation != null) {
-            MessageInput(
-                value = state.draft,
-                canSend = state.canSend,
-                onValueChange = onDraftChange,
-                onSend = onSend
-            )
+            if (state.canWrite) {
+                MessageInput(
+                    value = state.draft,
+                    canSend = state.canSend,
+                    onValueChange = onDraftChange,
+                    onSend = onSend
+                )
+            } else {
+                Surface(color = MaterialTheme.colorScheme.surface, shadowElevation = 8.dp) {
+                    Text(
+                        text = AppTexts.CHAT_READ_ONLY,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(Dimens.spaceMd)
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun MessageBubble(message: ChatMessage) {
-    val mine = message.isMine
+private fun ChatContextBar(
+    contact: User?,
+    request: RecycleRequest?,
+    onUserClick: (String) -> Unit,
+    onRequestClick: (String) -> Unit
+) {
+    val name = contact?.name ?: AppTexts.UNKNOWN_USER
+
+    Surface(color = MaterialTheme.colorScheme.surface, shadowElevation = 2.dp) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Dimens.spaceMd, vertical = Dimens.spaceSm),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .then(
+                        if (contact != null) Modifier.clickable { onUserClick(contact.id) }
+                        else Modifier
+                    ),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                UserAvatar(name = name, avatarUri = contact?.avatarUri, size = 40.dp)
+                Spacer(Modifier.width(Dimens.spaceSm))
+                Column {
+                    Text(
+                        text = name,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (request != null) {
+                        Text(
+                            text = "${request.materials.labels()} · ${request.neighborhood}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+            if (request != null) {
+                TextButton(onClick = { onRequestClick(request.id) }) {
+                    Text(AppTexts.CHAT_VIEW_REQUEST)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MessageBubble(message: ChatMessage, mine: Boolean) {
     val shape = RoundedCornerShape(
         topStart = 18.dp,
         topEnd = 18.dp,
@@ -130,7 +221,7 @@ private fun MessageBubble(message: ChatMessage) {
             Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
                 Text(text = message.text, style = MaterialTheme.typography.bodyMedium)
                 Text(
-                    text = message.time,
+                    text = formatClock(message.sentAt),
                     style = MaterialTheme.typography.labelSmall,
                     color = content.copy(alpha = 0.7f),
                     modifier = Modifier.align(Alignment.End).padding(top = 4.dp)

@@ -9,7 +9,9 @@ import com.udistrital.reciclajeppc.AppContainer
 import com.udistrital.reciclajeppc.core.session.SessionManager
 import com.udistrital.reciclajeppc.domain.model.RecycleRequest
 import com.udistrital.reciclajeppc.domain.model.RequestStatus
+import com.udistrital.reciclajeppc.domain.model.User
 import com.udistrital.reciclajeppc.domain.repository.RequestRepository
+import com.udistrital.reciclajeppc.domain.repository.UserRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -19,18 +21,21 @@ data class GeneratorHomeUiState(
     val userName: String = "",
     val activeRequests: List<RecycleRequest> = emptyList(),
     val completedCount: Int = 0,
-    val recycledKg: Double = 0.0
+    val recycledKg: Double = 0.0,
+    val users: Map<String, User> = emptyMap()
 )
 
 class GeneratorHomeViewModel(
     requestRepository: RequestRepository,
-    sessionManager: SessionManager
+    sessionManager: SessionManager,
+    userRepository: UserRepository
 ) : ViewModel() {
 
     val uiState: StateFlow<GeneratorHomeUiState> = combine(
         requestRepository.observeRequests(),
-        sessionManager.currentUser
-    ) { requests, user ->
+        sessionManager.currentUser,
+        userRepository.observeUsers()
+    ) { requests, user, users ->
         val mine = requests.filter { it.generatorId == user?.id }
         val completed = mine.filter { it.status == RequestStatus.COMPLETED }
         GeneratorHomeUiState(
@@ -39,7 +44,8 @@ class GeneratorHomeViewModel(
                 it.status == RequestStatus.AVAILABLE || it.status == RequestStatus.ACCEPTED
             },
             completedCount = completed.size,
-            recycledKg = completed.sumOf { it.weightKg }
+            recycledKg = completed.sumOf { it.weightKg },
+            users = users.associateBy { it.id }
         )
     }.stateIn(
         scope = viewModelScope,
@@ -50,7 +56,11 @@ class GeneratorHomeViewModel(
     companion object {
         fun factory(container: AppContainer): ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                GeneratorHomeViewModel(container.requestRepository, container.sessionManager)
+                GeneratorHomeViewModel(
+                    container.requestRepository,
+                    container.sessionManager,
+                    container.userRepository
+                )
             }
         }
     }

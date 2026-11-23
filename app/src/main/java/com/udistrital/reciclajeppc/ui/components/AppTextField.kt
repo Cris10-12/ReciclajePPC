@@ -33,8 +33,16 @@ fun AppTextField(
     keyboardType: KeyboardType = KeyboardType.Text,
     singleLine: Boolean = true,
     minLines: Int = 1,
-    errorText: String? = null) {
+    errorText: String? = null,
+    helperText: String? = null
+) {
     var passwordVisible by remember { mutableStateOf(false) }
+
+    val supporting: (@Composable () -> Unit)? = when {
+        errorText != null -> ({ Text(errorText) })
+        helperText != null -> ({ Text(helperText) })
+        else -> null
+    }
 
     OutlinedTextField(
         value = value,
@@ -64,9 +72,7 @@ fun AppTextField(
         singleLine = singleLine,
         minLines = minLines,
         isError = errorText != null,
-        supportingText = if (errorText != null) {
-            { Text(errorText) }
-        } else null,
+        supportingText = supporting,
         shape = MaterialTheme.shapes.medium,
         colors = OutlinedTextFieldDefaults.colors(
             focusedContainerColor = MaterialTheme.colorScheme.surface,

@@ -13,13 +13,14 @@ import androidx.compose.ui.Modifier
 import com.udistrital.reciclajeppc.core.constants.AppTexts
 import com.udistrital.reciclajeppc.core.constants.Dimens
 import com.udistrital.reciclajeppc.core.util.formatWeight
+import com.udistrital.reciclajeppc.core.util.pluralize
 import com.udistrital.reciclajeppc.core.util.screenPadding
 import com.udistrital.reciclajeppc.domain.model.RequestStatus
+import com.udistrital.reciclajeppc.domain.model.UserRole
 import com.udistrital.reciclajeppc.ui.components.AppTopBar
 import com.udistrital.reciclajeppc.ui.components.EmptyState
 import com.udistrital.reciclajeppc.ui.components.MaterialChip
 import com.udistrital.reciclajeppc.ui.components.RequestCard
-import com.udistrital.reciclajeppc.core.util.pluralize
 
 
 @Composable
@@ -27,7 +28,8 @@ fun HistoryScreen(
     state: HistoryUiState,
     onFilterChange: (RequestStatus?) -> Unit,
     onRequestClick: (String) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onUserClick: (String) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         AppTopBar(title = AppTexts.HISTORY_TITLE, onBack = onBack)
@@ -77,7 +79,16 @@ fun HistoryScreen(
                 verticalArrangement = Arrangement.spacedBy(Dimens.spaceMd)
             ) {
                 items(state.requests, key = { it.id }) { request ->
-                    RequestCard(request = request, onClick = { onRequestClick(request.id) })
+                    RequestCard(
+                        request = request,
+                        onClick = { onRequestClick(request.id) },
+                        person = if (state.role == UserRole.GENERATOR) {
+                            request.recyclerId?.let { state.users[it] }
+                        } else {
+                            state.users[request.generatorId]
+                        },
+                        onPersonClick = onUserClick
+                    )
                 }
             }
         }

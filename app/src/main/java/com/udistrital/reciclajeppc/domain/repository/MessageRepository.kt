@@ -4,10 +4,12 @@ import com.udistrital.reciclajeppc.domain.model.Conversation
 import kotlinx.coroutines.flow.Flow
 
 interface MessageRepository {
-    fun observeConversations(): Flow<List<Conversation>>
+    fun observeConversations(userId: String): Flow<List<Conversation>>
     fun observeConversation(id: String): Flow<Conversation?>
 
-    suspend fun sendMessage(conversationId: String, text: String)
+    suspend fun getOrCreateConversation(requestId: String, userId: String): Result<String>
 
-    suspend fun markAsRead(conversationId: String)
+    suspend fun sendMessage(conversationId: String, senderId: String, text: String): Result<Unit>
+
+    suspend fun markAsRead(conversationId: String, userId: String)
 }

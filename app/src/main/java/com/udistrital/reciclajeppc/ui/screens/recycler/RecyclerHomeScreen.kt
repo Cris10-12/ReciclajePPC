@@ -1,11 +1,13 @@
 package com.udistrital.reciclajeppc.ui.screens.recycler
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -16,6 +18,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -25,34 +28,49 @@ import com.udistrital.reciclajeppc.core.util.formatWeight
 import com.udistrital.reciclajeppc.core.util.screenPadding
 import com.udistrital.reciclajeppc.ui.components.BrandHeader
 import com.udistrital.reciclajeppc.ui.components.EmptyState
+import com.udistrital.reciclajeppc.ui.components.MessagesAction
 import com.udistrital.reciclajeppc.ui.components.PrimaryButton
 import com.udistrital.reciclajeppc.ui.components.RequestCard
 import com.udistrital.reciclajeppc.ui.components.SectionHeader
 import com.udistrital.reciclajeppc.ui.components.StatCard
+
 
 @Composable
 fun RecyclerHomeScreen(
     state: RecyclerHomeUiState,
     onExplore: () -> Unit,
     onRequestClick: (String) -> Unit,
-    onSeeAgenda: () -> Unit
+    onSeeAgenda: () -> Unit,
+    unreadMessages: Int,
+    onMessages: () -> Unit,
+    onUserClick: (String) -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
     ) {
-        BrandHeader(verticalPadding = 28.dp) {
-            Text(
-                text = if (state.userName.isBlank()) "¡Hola!" else "¡Hola, ${state.userName}!",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimary
-            )
-            Text(
-                text = "Modo Reciclador · esto es lo que has recolectado",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
+        Box {
+            BrandHeader(verticalPadding = 28.dp) {
+                Text(
+                    text = if (state.userName.isBlank()) "¡Hola!" else "¡Hola, ${state.userName}!",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+                Text(
+                    text = "Modo Reciclador · esto es lo que has recolectado",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
+                )
+            }
+            MessagesAction(
+                unreadCount = unreadMessages,
+                onClick = onMessages,
+                tint = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .statusBarsPadding()
             )
         }
 
@@ -101,7 +119,12 @@ fun RecyclerHomeScreen(
                 )
             } else {
                 state.acceptedRequests.take(3).forEach { request ->
-                    RequestCard(request = request, onClick = { onRequestClick(request.id) })
+                    RequestCard(
+                        request = request,
+                        onClick = { onRequestClick(request.id) },
+                        person = state.users[request.generatorId],
+                        onPersonClick = onUserClick
+                    )
                 }
             }
 
@@ -117,7 +140,12 @@ fun RecyclerHomeScreen(
                 )
             } else {
                 state.availableRequests.take(3).forEach { request ->
-                    RequestCard(request = request, onClick = { onRequestClick(request.id) })
+                    RequestCard(
+                        request = request,
+                        onClick = { onRequestClick(request.id) },
+                        person = state.users[request.generatorId],
+                        onPersonClick = onUserClick
+                    )
                 }
             }
         }

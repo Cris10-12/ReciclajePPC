@@ -9,8 +9,10 @@ import com.udistrital.reciclajeppc.AppContainer
 import com.udistrital.reciclajeppc.core.session.SessionManager
 import com.udistrital.reciclajeppc.domain.model.RecycleRequest
 import com.udistrital.reciclajeppc.domain.model.RequestStatus
+import com.udistrital.reciclajeppc.domain.model.User
 import com.udistrital.reciclajeppc.domain.model.UserRole
 import com.udistrital.reciclajeppc.domain.repository.RequestRepository
+import com.udistrital.reciclajeppc.domain.repository.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -20,16 +22,17 @@ import kotlinx.coroutines.flow.stateIn
 data class HistoryUiState(
     val isLoading: Boolean = true,
     val role: UserRole = UserRole.GENERATOR,
-    /** null = completadas y canceladas */
     val filter: RequestStatus? = null,
     val requests: List<RecycleRequest> = emptyList(),
     val completedCount: Int = 0,
-    val completedKg: Double = 0.0
+    val completedKg: Double = 0.0,
+    val users: Map<String, User> = emptyMap()
 )
 
 class HistoryViewModel(
     requestRepository: RequestRepository,
-    sessionManager: SessionManager
+    sessionManager: SessionManager,
+    userRepository: UserRepository
 ) : ViewModel() {
 
     private val filter = MutableStateFlow<RequestStatus?>(null)
@@ -38,14 +41,15 @@ class HistoryViewModel(
         requestRepository.observeRequests(),
         sessionManager.currentUser,
         sessionManager.activeRole,
-        filter
-    ) { requests, user, role, selected ->
+        filter,
+        userRepository.observeUsers()
+    ) { requests, user, role, selected, users ->
         val closed = requests.filter { request ->
             val isClosed = request.status == RequestStatus.COMPLETED ||
                     request.status == RequestStatus.CANCELLED
             val isMine = when (role) {
                 UserRole.GENERATOR -> user != null && request.generatorId == user.id
-                UserRole.RECYCLER -> user != null && request.recyclerName == user.name
+                UserRole.RECYCLER -> user != null && request.recyclerId == user.id
             }
             isClosed && isMine
         }
@@ -56,7 +60,8 @@ class HistoryViewModel(
             filter = selected,
             requests = closed.filter { selected == null || it.status == selected },
             completedCount = completed.size,
-            completedKg = completed.sumOf { it.weightKg }
+            completedKg = completed.sumOf { it.weightKg },
+            users = users.associateBy { it.id }
         )
     }.stateIn(
         scope = viewModelScope,
@@ -71,7 +76,11 @@ class HistoryViewModel(
     companion object {
         fun factory(container: AppContainer): ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                HistoryViewModel(container.requestRepository, container.sessionManager)
+                HistoryViewModel(
+                    container.requestRepository,
+                    container.sessionManager,
+                    container.userRepository
+                )
             }
         }
     }

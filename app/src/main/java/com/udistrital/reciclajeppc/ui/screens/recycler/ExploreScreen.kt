@@ -16,14 +16,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.udistrital.reciclajeppc.core.constants.AppTexts
 import com.udistrital.reciclajeppc.core.constants.Dimens
+import com.udistrital.reciclajeppc.core.util.pluralize
 import com.udistrital.reciclajeppc.core.util.screenPadding
 import com.udistrital.reciclajeppc.domain.model.MaterialType
 import com.udistrital.reciclajeppc.ui.components.AppTopBar
 import com.udistrital.reciclajeppc.ui.components.EmptyState
 import com.udistrital.reciclajeppc.ui.components.MaterialChip
+import com.udistrital.reciclajeppc.ui.components.MessagesAction
 import com.udistrital.reciclajeppc.ui.components.RequestCard
 import com.udistrital.reciclajeppc.ui.components.icon
-import com.udistrital.reciclajeppc.core.util.pluralize
 
 
 @Composable
@@ -31,11 +32,18 @@ fun ExploreScreen(
     state: ExploreUiState,
     onMaterialToggle: (MaterialType) -> Unit,
     onClearFilter: () -> Unit,
-    onRequestClick: (String) -> Unit
+    onRequestClick: (String) -> Unit,
+    onUserClick: (String) -> Unit,
+    unreadMessages: Int,
+    onMessages: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
-        AppTopBar(title = AppTexts.EXPLORE_REQUESTS)
-
+        AppTopBar(
+            title = AppTexts.EXPLORE_REQUESTS,
+            actions = {
+                MessagesAction(unreadCount = unreadMessages, onClick = onMessages)
+            }
+        )
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -76,7 +84,13 @@ fun ExploreScreen(
                 verticalArrangement = Arrangement.spacedBy(Dimens.spaceMd)
             ) {
                 items(state.requests, key = { it.id }) { request ->
-                    RequestCard(request = request, onClick = { onRequestClick(request.id) })
+                    val generator = state.generators[request.generatorId]
+                    RequestCard(
+                        request = request,
+                        onClick = { onRequestClick(request.id) },
+                        person = state.generators[request.generatorId],
+                        onPersonClick = onUserClick
+                    )
                 }
             }
         }

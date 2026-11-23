@@ -1,5 +1,6 @@
 package com.udistrital.reciclajeppc.ui.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import com.udistrital.reciclajeppc.core.constants.Dimens
@@ -23,11 +25,15 @@ fun StatCard(
     value: String,
     label: String,
     icon: ImageVector,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
 ) {
+    val shape = MaterialTheme.shapes.large
     Card(
-        modifier = modifier,
-        shape = MaterialTheme.shapes.large,
+        modifier = modifier.then(
+            if (onClick != null) Modifier.clip(shape).clickable(onClick = onClick) else Modifier
+        ),
+        shape = shape,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         )
@@ -53,9 +59,11 @@ fun StatCard(
                 maxLines = 1
             )
             Text(
-                text = label,
+                text = if (onClick != null) "$label ›" else label,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (onClick != null) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = if (onClick != null) FontWeight.SemiBold else FontWeight.Normal,
                 maxLines = 1
             )
         }

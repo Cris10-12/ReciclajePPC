@@ -9,7 +9,9 @@ import com.udistrital.reciclajeppc.AppContainer
 import com.udistrital.reciclajeppc.core.session.SessionManager
 import com.udistrital.reciclajeppc.domain.model.RecycleRequest
 import com.udistrital.reciclajeppc.domain.model.RequestStatus
+import com.udistrital.reciclajeppc.domain.model.User
 import com.udistrital.reciclajeppc.domain.repository.RequestRepository
+import com.udistrital.reciclajeppc.domain.repository.UserRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -20,19 +22,22 @@ data class RecyclerHomeUiState(
     val availableRequests: List<RecycleRequest> = emptyList(),
     val acceptedRequests: List<RecycleRequest> = emptyList(),
     val completedCount: Int = 0,
-    val collectedKg: Double = 0.0
+    val collectedKg: Double = 0.0,
+    val users: Map<String, User> = emptyMap()
 )
 
 class RecyclerHomeViewModel(
     requestRepository: RequestRepository,
-    sessionManager: SessionManager
+    sessionManager: SessionManager,
+    userRepository: UserRepository
 ) : ViewModel() {
 
     val uiState: StateFlow<RecyclerHomeUiState> = combine(
         requestRepository.observeRequests(),
-        sessionManager.currentUser
-    ) { requests, user ->
-        val mine = requests.filter { it.recyclerName == user?.name }
+        sessionManager.currentUser,
+        userRepository.observeUsers()
+    ) { requests, user, users ->
+        val mine = requests.filter { user != null && it.recyclerId == user.id }
         val completed = mine.filter { it.status == RequestStatus.COMPLETED }
         RecyclerHomeUiState(
             userName = user?.name?.substringBefore(" ").orEmpty(),
@@ -41,7 +46,8 @@ class RecyclerHomeViewModel(
             },
             acceptedRequests = mine.filter { it.status == RequestStatus.ACCEPTED },
             completedCount = completed.size,
-            collectedKg = completed.sumOf { it.weightKg }
+            collectedKg = completed.sumOf { it.weightKg },
+            users = users.associateBy { it.id }
         )
     }.stateIn(
         scope = viewModelScope,
@@ -52,7 +58,11 @@ class RecyclerHomeViewModel(
     companion object {
         fun factory(container: AppContainer): ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                RecyclerHomeViewModel(container.requestRepository, container.sessionManager)
+                RecyclerHomeViewModel(
+                    container.requestRepository,
+                    container.sessionManager,
+                    container.userRepository
+                )
             }
         }
     }

@@ -27,40 +27,36 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.udistrital.reciclajeppc.core.constants.AppTexts
 import com.udistrital.reciclajeppc.core.constants.Dimens
-import com.udistrital.reciclajeppc.core.util.getInitials
-import com.udistrital.reciclajeppc.domain.model.Conversation
+import com.udistrital.reciclajeppc.core.util.formatRelativeTime
 import com.udistrital.reciclajeppc.ui.components.AppTopBar
 import com.udistrital.reciclajeppc.ui.components.EmptyState
+import com.udistrital.reciclajeppc.ui.components.UserAvatar
+import com.udistrital.reciclajeppc.ui.components.labels
 
 @Composable
 fun MessagesScreen(
     state: MessagesUiState,
-    onConversationClick: (String) -> Unit
+    onConversationClick: (String) -> Unit,
+    onBack: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
-        AppTopBar(title = AppTexts.MESSAGES_TITLE)
+        AppTopBar(title = AppTexts.MESSAGES_TITLE, onBack = onBack)
 
         when {
             state.isLoading -> Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.weight(1f).fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) { CircularProgressIndicator() }
 
             state.conversations.isEmpty() -> EmptyState(
-                message = AppTexts.EMPTY_MESSAGES,
-                hint = AppTexts.EMPTY_MESSAGES_HINT
+                message = AppTexts.MESSAGES_EMPTY,
+                hint = AppTexts.MESSAGES_EMPTY_HINT
             )
 
-            else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(state.conversations, key = { it.id }) { conversation ->
-                    ConversationRow(
-                        conversation = conversation,
-                        onClick = { onConversationClick(conversation.id) }
-                    )
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 76.dp),
-                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-                    )
+            else -> LazyColumn(modifier = Modifier.weight(1f)) {
+                items(state.conversations, key = { it.id }) { item ->
+                    ConversationRow(item = item, onClick = { onConversationClick(item.id) })
+                    HorizontalDivider()
                 }
             }
         }
@@ -68,7 +64,9 @@ fun MessagesScreen(
 }
 
 @Composable
-private fun ConversationRow(conversation: Conversation, onClick: () -> Unit) {
+private fun ConversationRow(item: ConversationItem, onClick: () -> Unit) {
+    val name = item.contact?.name ?: AppTexts.UNKNOWN_USER
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -76,32 +74,29 @@ private fun ConversationRow(conversation: Conversation, onClick: () -> Unit) {
             .padding(horizontal = Dimens.spaceMd, vertical = Dimens.spaceSm + 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = getInitials(conversation.contactName),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
+        UserAvatar(name = name, avatarUri = item.contact?.avatarUri, size = 48.dp)
 
         Spacer(Modifier.width(Dimens.spaceMd))
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = conversation.contactName,
+                text = name,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = if (conversation.unread > 0) FontWeight.Bold else FontWeight.SemiBold,
+                fontWeight = if (item.unread > 0) FontWeight.Bold else FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+            item.request?.let { request ->
+                Text(
+                    text = request.materials.labels(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
             Text(
-                text = conversation.lastMessage,
+                text = item.lastMessage.ifBlank { AppTexts.CHAT_EMPTY },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -111,13 +106,18 @@ private fun ConversationRow(conversation: Conversation, onClick: () -> Unit) {
 
         Spacer(Modifier.width(Dimens.spaceSm))
 
-        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(
-                text = conversation.time,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            if (conversation.unread > 0) {
+        Column(
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            item.lastMessageAt?.let { sentAt ->
+                Text(
+                    text = formatRelativeTime(sentAt),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            if (item.unread > 0) {
                 Box(
                     modifier = Modifier
                         .size(22.dp)
@@ -125,7 +125,7 @@ private fun ConversationRow(conversation: Conversation, onClick: () -> Unit) {
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = conversation.unread.toString(),
+                        text = item.unread.toString(),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onPrimary
                     )

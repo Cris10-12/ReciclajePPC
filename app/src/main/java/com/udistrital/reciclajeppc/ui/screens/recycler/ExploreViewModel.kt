@@ -10,7 +10,9 @@ import com.udistrital.reciclajeppc.core.session.SessionManager
 import com.udistrital.reciclajeppc.domain.model.MaterialType
 import com.udistrital.reciclajeppc.domain.model.RecycleRequest
 import com.udistrital.reciclajeppc.domain.model.RequestStatus
+import com.udistrital.reciclajeppc.domain.model.User
 import com.udistrital.reciclajeppc.domain.repository.RequestRepository
+import com.udistrital.reciclajeppc.domain.repository.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -20,12 +22,14 @@ import kotlinx.coroutines.flow.update
 
 data class ExploreUiState(
     val selectedMaterials: Set<MaterialType> = emptySet(),
-    val requests: List<RecycleRequest> = emptyList()
+    val requests: List<RecycleRequest> = emptyList(),
+    val generators: Map<String, User> = emptyMap()
 )
 
 class ExploreViewModel(
     requestRepository: RequestRepository,
-    sessionManager: SessionManager
+    sessionManager: SessionManager,
+    userRepository: UserRepository
 ) : ViewModel() {
 
     private val selected = MutableStateFlow<Set<MaterialType>>(emptySet())
@@ -33,15 +37,17 @@ class ExploreViewModel(
     val uiState: StateFlow<ExploreUiState> = combine(
         requestRepository.observeRequests(),
         sessionManager.currentUser,
-        selected
-    ) { requests, user, filter ->
+        selected,
+        userRepository.observeUsers()
+    ) { requests, user, filter, users ->
         ExploreUiState(
             selectedMaterials = filter,
             requests = requests.filter { request ->
                 request.status == RequestStatus.AVAILABLE &&
                         request.generatorId != user?.id &&
                         (filter.isEmpty() || request.materials.any { it in filter })
-            }
+            },
+            generators = users.associateBy { it.id }
         )
     }.stateIn(
         scope = viewModelScope,
@@ -60,7 +66,11 @@ class ExploreViewModel(
     companion object {
         fun factory(container: AppContainer): ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                ExploreViewModel(container.requestRepository, container.sessionManager)
+                ExploreViewModel(
+                    container.requestRepository,
+                    container.sessionManager,
+                    container.userRepository
+                )
             }
         }
     }

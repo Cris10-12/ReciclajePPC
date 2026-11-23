@@ -1,6 +1,7 @@
 package com.udistrital.reciclajeppc.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,12 +32,15 @@ import com.udistrital.reciclajeppc.core.constants.Dimens
 import com.udistrital.reciclajeppc.core.util.cardPadding
 import com.udistrital.reciclajeppc.core.util.formatWeight
 import com.udistrital.reciclajeppc.domain.model.RecycleRequest
+import com.udistrital.reciclajeppc.domain.model.User
 
 @Composable
 fun RequestCard(
     request: RecycleRequest,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    person: User? = null,
+    onPersonClick: ((String) -> Unit)? = null
 ) {
     Card(
         onClick = onClick,
@@ -71,7 +75,8 @@ fun RequestCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "${request.materials.labels()} · ${formatWeight(request.weightKg)}",                        style = MaterialTheme.typography.titleMedium,
+                        text = "${request.materials.labels()} · ${formatWeight(request.weightKg)}",
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.weight(1f),
                         maxLines = 1,
@@ -80,13 +85,33 @@ fun RequestCard(
                     Spacer(Modifier.width(Dimens.spaceSm))
                     StatusBadge(request.status)
                 }
-                Text(
-                    text = request.generatorName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                if (person != null) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(
+                                if (onPersonClick != null) {
+                                    Modifier.clickable { onPersonClick(person.id) }
+                                } else Modifier
+                            ),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        UserAvatar(
+                            name = person.name,
+                            avatarUri = person.avatarUri,
+                            size = 24.dp,
+                            textStyle = MaterialTheme.typography.labelSmall
+                        )
+                        Spacer(Modifier.width(Dimens.spaceSm))
+                        Text(
+                            text = person.name,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
                 Spacer(Modifier.height(Dimens.spaceSm))
                 InfoLine(Icons.Filled.LocationOn, request.neighborhood)
                 InfoLine(Icons.Filled.Schedule, request.availability)

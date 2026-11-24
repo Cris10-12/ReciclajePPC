@@ -1,0 +1,41 @@
+services:
+  db-central:
+    image: mysql:8
+    container_name: db-central
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: social
+    ports:
+      - "3307:3306"
+    volumes:
+      - central_data:/var/lib/mysql
+      - ./backend/sql:/docker-entrypoint-initdb.d
+
+  db-norte:
+    image: mysql:8
+    container_name: db-norte
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: social
+    ports:
+      - "3308:3306"
+    volumes:
+      - norte_data:/var/lib/mysql
+      - ./backend/sql:/docker-entrypoint-initdb.d
+
+  db-sur:
+    image: mysql:8
+    container_name: db-sur
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: social
+    ports:
+      - "3309:3306"
+    volumes:
+      - sur_data:/var/lib/mysql
+      - ./backend/sql:/docker-entrypoint-initdb.d
+
+volumes:
+  central_data:
+  norte_data:
+  sur_data:

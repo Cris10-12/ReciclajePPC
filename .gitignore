@@ -7,3 +7,7 @@
 .externalNativeBuild
 .cxx
 local.properties
+# Backend Ktor
+backend/**/build/
+backend/**/.gradle/
+backend/nodo/.idea/

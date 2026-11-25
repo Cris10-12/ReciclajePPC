@@ -1,4 +1,5 @@
 services:
+  # ---------------------- BASES DE DATOS (una por nodo) ----------------------
   db-central:
     image: mysql:8
     container_name: db-central
@@ -9,7 +10,12 @@ services:
       - "3307:3306"
     volumes:
       - central_data:/var/lib/mysql
-      - ./backend/sql:/docker-entrypoint-initdb.d
+      - ./backend/sql/central:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   db-norte:
     image: mysql:8
@@ -21,7 +27,12 @@ services:
       - "3308:3306"
     volumes:
       - norte_data:/var/lib/mysql
-      - ./backend/sql:/docker-entrypoint-initdb.d
+      - ./backend/sql/norte:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   db-sur:
     image: mysql:8
@@ -33,7 +44,63 @@ services:
       - "3309:3306"
     volumes:
       - sur_data:/var/lib/mysql
-      - ./backend/sql:/docker-entrypoint-initdb.d
+      - ./backend/sql/sur:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # ---------------------- NODOS KTOR (uno por region) ----------------------
+  # Los PEERS usan los NOMBRES DE SERVICIO de Docker (no localhost), porque
+  # los nodos se comunican dentro de la red interna de compose.
+  nodo-central:
+    build: ./backend/nodo
+    container_name: nodo-central
+    environment:
+      NODE_ID: central
+      DB_URL: "jdbc:mysql://db-central:3306/social?allowPublicKeyRetrieval=true&useSSL=false"
+      DB_USER: root
+      DB_PASS: root
+      PORT: "8080"
+      PEERS: "norte=http://nodo-norte:8080,sur=http://nodo-sur:8080"
+    ports:
+      - "8081:8080"
+    depends_on:
+      db-central:
+        condition: service_healthy
+
+  nodo-norte:
+    build: ./backend/nodo
+    container_name: nodo-norte
+    environment:
+      NODE_ID: norte
+      DB_URL: "jdbc:mysql://db-norte:3306/social?allowPublicKeyRetrieval=true&useSSL=false"
+      DB_USER: root
+      DB_PASS: root
+      PORT: "8080"
+      PEERS: "central=http://nodo-central:8080,sur=http://nodo-sur:8080"
+    ports:
+      - "8082:8080"
+    depends_on:
+      db-norte:
+        condition: service_healthy
+
+  nodo-sur:
+    build: ./backend/nodo
+    container_name: nodo-sur
+    environment:
+      NODE_ID: sur
+      DB_URL: "jdbc:mysql://db-sur:3306/social?allowPublicKeyRetrieval=true&useSSL=false"
+      DB_USER: root
+      DB_PASS: root
+      PORT: "8080"
+      PEERS: "central=http://nodo-central:8080,norte=http://nodo-norte:8080"
+    ports:
+      - "8083:8080"
+    depends_on:
+      db-sur:
+        condition: service_healthy
 
 volumes:
   central_data:

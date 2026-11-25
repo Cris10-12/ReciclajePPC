@@ -27,6 +27,11 @@ dependencies {
     implementation(libs.logback.classic)
     implementation("com.mysql:mysql-connector-j:9.2.0")
     implementation("com.zaxxer:HikariCP:6.2.1")
+     // Cliente HTTP para que un nodo replique hacia sus peers
+    implementation("io.ktor:ktor-client-core:3.6.1")
+    implementation("io.ktor:ktor-client-cio:3.6.1")
+    implementation("io.ktor:ktor-client-content-negotiation:3.6.1")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:3.6.1")
     testImplementation(kotlin("test"))
     testImplementation(ktorLibs.server.testHost)
 }

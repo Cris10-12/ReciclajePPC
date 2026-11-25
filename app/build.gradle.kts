@@ -63,5 +63,4 @@ dependencies {
 
     // Carga de imágenes (foto de perfil y galería)
     implementation("io.coil-kt:coil-compose:2.7.0")
-
 }

@@ -67,8 +67,10 @@ import com.udistrital.reciclajeppc.ui.screens.shared.HistoryScreen
 import com.udistrital.reciclajeppc.ui.screens.shared.HistoryViewModel
 import com.udistrital.reciclajeppc.ui.screens.shared.RequestDetailScreen
 import com.udistrital.reciclajeppc.ui.screens.shared.RequestDetailViewModel
+import com.udistrital.reciclajeppc.ui.screens.nodes.NodesScreen
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
+
 
 @Composable
 fun AppNavGraph(container: AppContainer) {
@@ -172,9 +174,13 @@ fun AppNavGraph(container: AppContainer) {
                     onBack = { navController.popBackStack() }
                 )
             }
+            composable(Routes.NODES) {
+                NodesScreen(onBack = { navController.popBackStack() })
+            }
             composable(Routes.MAIN_MENU) {
                 MainMenuScreen(
                     userName = user?.name?.substringBefore(" ").orEmpty(),
+                    onOpenNodes = { navController.navigate(Routes.NODES) },
                     onSelectRole = { selected ->
                         sessionManager.setRole(selected)
                         navController.navigate(Routes.homeFor(selected)) {

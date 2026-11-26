@@ -8,6 +8,7 @@ object Routes {
     const val REGISTER = "register"
     const val MAIN_MENU = "main_menu"
 
+    const val NODES = "nodes"
     // Pestañas del Generador
     const val GENERATOR_HOME = "generator_home"
     const val MY_REQUESTS = "my_requests"

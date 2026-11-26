@@ -42,6 +42,7 @@ import com.udistrital.reciclajeppc.ui.components.LogoBadge
 @Composable
 fun MainMenuScreen(
     userName: String,
+    onOpenNodes: () -> Unit = {},
     onSelectRole: (UserRole) -> Unit,
     onLogout: () -> Unit
 ) {
@@ -102,7 +103,9 @@ fun MainMenuScreen(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
-
+            TextButton(onClick = onOpenNodes, modifier = Modifier.fillMaxWidth()) {
+                Text("Red distribuida (demo)", color = MaterialTheme.colorScheme.primary)
+            }
             TextButton(
                 onClick = onLogout,
                 modifier = Modifier.fillMaxWidth()
